@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:reorderable_grid/reorderable_grid.dart';
+import 'package:labhouse_combinable_reorderable_scroll/reorderable_grid.dart';
 
 void main() => runApp(const MyApp());
 
@@ -28,21 +28,57 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        body: ReorderableGridView.extent(
-          maxCrossAxisExtent: 150,
-          onReorder: _onReorder,
-          childAspectRatio: 1,
-          children: items.map((item) {
-            /// map every list entry to a widget and assure every child has a
-            /// unique key
-            return Card(
+        body: CombinableReorderableGrid(
+          onCombine: (draggedIndex, targetIndex) => items[targetIndex] += items[draggedIndex],
+          canCombine: (draggingIndex, targetIndex) => draggingIndex.isEven == targetIndex.isEven,
+          itemBuilder: (context, index) {
+            final item = items[index];
+
+            final list = SliverCombinableReorderableGrid.of(context);
+            var color = item.isEven ? Colors.blue.shade200 : Colors.greenAccent.shade200;
+            if (list.indexCombine == index) {
+              color = Colors.pink;
+            }
+            return CombinableReorderableGridDelayedDragStartListener(
+              // affinity: Axis.horizontal,
+              delay: Duration(milliseconds: 200),
+              index: item,
               key: ValueKey(item),
-              child: Center(
-                child: Text(item.toString()),
+              child: Card(
+                color: color,
+                child: Center(
+                  child: Text(item.toString()),
+                ),
               ),
             );
-          }).toList(),
+          },
+          itemCount: items.length,
+          onReorder: _onReorder,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+          ),
         ),
+
+        // CombinableReorderableGridView.extent(
+        //   maxCrossAxisExtent: 150,
+        //   onReorder: _onReorder,
+        //   childAspectRatio: 1,
+        //   children: items.map((item) {
+        //     /// map every list entry to a widget and assure every child has a
+        //     /// unique key
+        //     return CombinableReorderableGridDragStartListener(
+        //       affinity: Axis.horizontal,
+        //       index: item,
+        //       key: ValueKey(item),
+        //       child: Card(
+        //         color: item.isEven ? Colors.blue.shade200 : Colors.greenAccent.shade200,
+        //         child: Center(
+        //           child: Text(item.toString()),
+        //         ),
+        //       ),
+        //     );
+        //   }).toList(),
+        // ),
       ),
     );
   }

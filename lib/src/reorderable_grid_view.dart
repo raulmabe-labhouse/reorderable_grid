@@ -3,22 +3,22 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:reorderable_grid/src/reorderable_grid.dart';
+import 'package:labhouse_combinable_reorderable_scroll/src/reorderable_grid.dart';
 
 /// A scrollable, reorderable, 2D array of widgets.
 ///
 /// The main axis direction of a grid is the direction in which it scrolls (the
 /// [scrollDirection]).
 ///
-/// The most commonly used grid layouts are [ReorderableGridView.count], which creates a
+/// The most commonly used grid layouts are [CombinableReorderableGridView.count], which creates a
 /// layout with a fixed number of tiles in the cross axis, and
-/// [ReorderableGridView.extent], which creates a layout with tiles that have a maximum
+/// [CombinableReorderableGridView.extent], which creates a layout with tiles that have a maximum
 /// cross-axis extent. A custom [SliverGridDelegate] can produce an arbitrary 2D
 /// arrangement of children, including arrangements that are unaligned or
 /// overlapping.
 ///
 /// To create a grid with a large (or infinite) number of children, use the
-/// [ReorderableGridView.builder] constructor with either a
+/// [CombinableReorderableGridView.builder] constructor with either a
 /// [SliverGridDelegateWithFixedCrossAxisCount] or a
 /// [SliverGridDelegateWithMaxCrossAxisExtent] for the [gridDelegate].
 ///
@@ -29,32 +29,32 @@ import 'package:reorderable_grid/src/reorderable_grid.dart';
 ///
 /// ## Transitioning to [CustomScrollView]
 ///
-/// A [ReorderableGridView] is basically a [CustomScrollView] with a single [SliverReorderableGrid] in
+/// A [CombinableReorderableGridView] is basically a [CustomScrollView] with a single [SliverCombinableReorderableGrid] in
 /// its [CustomScrollView.slivers] property.
 ///
-/// If [ReorderableGridView] is no longer sufficient, for example because the scroll view
+/// If [CombinableReorderableGridView] is no longer sufficient, for example because the scroll view
 /// is to have both a grid and a list, or because the grid is to be combined
 /// with a [SliverAppBar], etc, it is straight-forward to port code from using
-/// [ReorderableGridView] to using [CustomScrollView] directly.
+/// [CombinableReorderableGridView] to using [CustomScrollView] directly.
 ///
 /// The [key], [scrollDirection], [reverse], [controller], [primary], [physics],
-/// and [shrinkWrap] properties on [ReorderableGridView] map directly to the identically
+/// and [shrinkWrap] properties on [CombinableReorderableGridView] map directly to the identically
 /// named properties on [CustomScrollView].
 ///
 /// The [CustomScrollView.slivers] property should be a list containing just a
 /// [SliverGrid].
 ///
 /// the [gridDelegate] property on the
-/// [ReorderableGridView] corresponds to the [SliverGrid.gridDelegate] property.
+/// [CombinableReorderableGridView] corresponds to the [SliverGrid.gridDelegate] property.
 ///
-/// The [ReorderableGridView], [ReorderableGridView.count], and [ReorderableGridView.extent]
+/// The [CombinableReorderableGridView], [CombinableReorderableGridView.count], and [CombinableReorderableGridView.extent]
 /// constructors' `children` arguments correspond to the [childrenDelegate]
 /// being a [SliverChildListDelegate] with that same argument. The
-/// [ReorderableGridView.builder] constructor's `itemBuilder` and `childCount` arguments
+/// [CombinableReorderableGridView.builder] constructor's `itemBuilder` and `childCount` arguments
 /// correspond to the [childrenDelegate] being a [SliverChildBuilderDelegate]
 /// with the matching arguments.
 ///
-/// The [ReorderableGridView.count] and [ReorderableGridView.extent] constructors create
+/// The [CombinableReorderableGridView.count] and [CombinableReorderableGridView.extent] constructors create
 /// custom grid delegates, and have equivalently named constructors on
 /// [SliverGrid] to ease the transition: [SliverGrid.count] and
 /// [SliverGrid.extent] respectively.
@@ -68,12 +68,12 @@ import 'package:reorderable_grid/src/reorderable_grid.dart';
 /// list.
 ///
 /// {@tool snippet}
-/// This example demonstrates how to create a [ReorderableGridView] with two columns. The
+/// This example demonstrates how to create a [CombinableReorderableGridView] with two columns. The
 /// children are spaced apart using the `crossAxisSpacing` and `mainAxisSpacing`
 /// properties.
 ///
 /// ```dart
-/// ReorderableGridView.count(
+/// CombinableReorderableGridView.count(
 ///   primary: false,
 ///   padding: const EdgeInsets.all(20),
 ///   crossAxisSpacing: 10,
@@ -130,7 +130,7 @@ import 'package:reorderable_grid/src/reorderable_grid.dart';
 ///   slivers: <Widget>[
 ///     SliverPadding(
 ///       padding: const EdgeInsets.all(20),
-///       sliver: SliverReorderableGrid.count(
+///       sliver: SliverCombinableReorderableGrid.count(
 ///         crossAxisSpacing: 10,
 ///         mainAxisSpacing: 10,
 ///         crossAxisCount: 2,
@@ -176,7 +176,7 @@ import 'package:reorderable_grid/src/reorderable_grid.dart';
 /// ```
 /// {@end-tool}
 ///
-/// By default, [ReorderableGridView] will automatically pad the limits of the
+/// By default, [CombinableReorderableGridView] will automatically pad the limits of the
 /// grids's scrollable to avoid partial obstructions indicated by
 /// [MediaQuery]'s padding. To avoid this behavior, override with a
 /// zero [padding] property.
@@ -190,7 +190,7 @@ import 'package:reorderable_grid/src/reorderable_grid.dart';
 ///   return MediaQuery.removePadding(
 ///     context: context,
 ///     removeTop: true,
-///     child: ReorderableGridView.builder(
+///     child: CombinableReorderableGridView.builder(
 ///       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
 ///         crossAxisCount: 3,
 ///       ),
@@ -223,7 +223,7 @@ import 'package:reorderable_grid/src/reorderable_grid.dart';
 ///  * [ScrollNotification] and [NotificationListener], which can be used to watch
 ///    the scroll position without using a [ScrollController].
 ///  * The [catalog of layout widgets](https://flutter.dev/widgets/layout/).
-class ReorderableGridView extends StatefulWidget {
+class CombinableReorderableGridView extends StatefulWidget {
   /// Creates a scrollable, 2D array of widgets with a custom
   /// [SliverGridDelegate].
   ///
@@ -234,7 +234,7 @@ class ReorderableGridView extends StatefulWidget {
   /// `addRepaintBoundaries` argument corresponds to the
   /// [SliverChildListDelegate.addRepaintBoundaries] property. Both must not be
   /// null.
-  ReorderableGridView({
+  CombinableReorderableGridView({
     Key? key,
     this.scrollDirection = Axis.vertical,
     this.reverse = false,
@@ -270,7 +270,7 @@ class ReorderableGridView extends StatefulWidget {
   /// number of children because the builder is called only for those children
   /// that are actually visible.
   ///
-  /// Providing a non-null `itemCount` improves the ability of the [ReorderableGridView] to
+  /// Providing a non-null `itemCount` improves the ability of the [CombinableReorderableGridView] to
   /// estimate the maximum scroll extent.
   ///
   /// `itemBuilder` will be called only with indices greater than or equal to
@@ -283,7 +283,7 @@ class ReorderableGridView extends StatefulWidget {
   /// `addRepaintBoundaries` argument corresponds to the
   /// [SliverChildBuilderDelegate.addRepaintBoundaries] property. Both must not
   /// be null.
-  const ReorderableGridView.builder({
+  const CombinableReorderableGridView.builder({
     Key? key,
     this.scrollDirection = Axis.vertical,
     this.reverse = false,
@@ -323,7 +323,7 @@ class ReorderableGridView extends StatefulWidget {
   /// See also:
   ///
   ///  * [SliverGrid.count], the equivalent constructor for [SliverGrid].
-  ReorderableGridView.count({
+  CombinableReorderableGridView.count({
     Key? key,
     this.scrollDirection = Axis.vertical,
     this.reverse = false,
@@ -376,7 +376,7 @@ class ReorderableGridView extends StatefulWidget {
   /// See also:
   ///
   ///  * [SliverGrid.extent], the equivalent constructor for [SliverGrid].
-  ReorderableGridView.extent({
+  CombinableReorderableGridView.extent({
     Key? key,
     this.scrollDirection = Axis.vertical,
     this.reverse = false,
@@ -415,9 +415,9 @@ class ReorderableGridView extends StatefulWidget {
         itemCount = children.length,
         super(key: key);
 
-  /// A delegate that controls the layout of the children within the [ReorderableGridView].
+  /// A delegate that controls the layout of the children within the [CombinableReorderableGridView].
   ///
-  /// The [ReorderableGridView], [ReorderableGridView.builder], and [ReorderableGridView.custom] constructors let you specify this
+  /// The [CombinableReorderableGridView], [CombinableReorderableGridView.builder], and [CombinableReorderableGridView.custom] constructors let you specify this
   /// delegate explicitly. The other constructors create a [gridDelegate]
   /// implicitly.
   final SliverGridDelegate gridDelegate;
@@ -486,10 +486,10 @@ class ReorderableGridView extends StatefulWidget {
   final bool? autoScroll;
 
   @override
-  ReorderableGridViewState createState() => ReorderableGridViewState();
+  CombinableReorderableGridViewState createState() => CombinableReorderableGridViewState();
 }
 
-class ReorderableGridViewState extends State<ReorderableGridView> {
+class CombinableReorderableGridViewState extends State<CombinableReorderableGridView> {
   Widget _wrapWithSemantics(Widget child, int index) {
     void reorder(int startIndex, int endIndex) {
       if (startIndex != endIndex) {
@@ -498,8 +498,7 @@ class ReorderableGridViewState extends State<ReorderableGridView> {
     }
 
     // First, determine which semantics actions apply.
-    final Map<CustomSemanticsAction, VoidCallback> semanticsActions =
-        <CustomSemanticsAction, VoidCallback>{};
+    final Map<CustomSemanticsAction, VoidCallback> semanticsActions = <CustomSemanticsAction, VoidCallback>{};
 
     // Create the appropriate semantics actions.
     void moveToStart() => reorder(index, 0);
@@ -509,37 +508,27 @@ class ReorderableGridViewState extends State<ReorderableGridView> {
     // before index+2, which is after the space at index+1.
     void moveAfter() => reorder(index, index + 2);
 
-    final MaterialLocalizations localizations =
-        MaterialLocalizations.of(context);
+    final MaterialLocalizations localizations = MaterialLocalizations.of(context);
 
     // If the item can move to before its current position in the grid.
     if (index > 0) {
-      semanticsActions[
-              CustomSemanticsAction(label: localizations.reorderItemToStart)] =
-          moveToStart;
+      semanticsActions[CustomSemanticsAction(label: localizations.reorderItemToStart)] = moveToStart;
       String reorderItemBefore = localizations.reorderItemUp;
       if (widget.scrollDirection == Axis.horizontal) {
-        reorderItemBefore = Directionality.of(context) == TextDirection.ltr
-            ? localizations.reorderItemLeft
-            : localizations.reorderItemRight;
+        reorderItemBefore =
+            Directionality.of(context) == TextDirection.ltr ? localizations.reorderItemLeft : localizations.reorderItemRight;
       }
-      semanticsActions[CustomSemanticsAction(label: reorderItemBefore)] =
-          moveBefore;
+      semanticsActions[CustomSemanticsAction(label: reorderItemBefore)] = moveBefore;
     }
 
     // If the item can move to after its current position in the grid.
     if (index < widget.itemCount - 1) {
       String reorderItemAfter = localizations.reorderItemDown;
       if (widget.scrollDirection == Axis.horizontal) {
-        reorderItemAfter = Directionality.of(context) == TextDirection.ltr
-            ? localizations.reorderItemRight
-            : localizations.reorderItemLeft;
+        reorderItemAfter = Directionality.of(context) == TextDirection.ltr ? localizations.reorderItemRight : localizations.reorderItemLeft;
       }
-      semanticsActions[CustomSemanticsAction(label: reorderItemAfter)] =
-          moveAfter;
-      semanticsActions[
-              CustomSemanticsAction(label: localizations.reorderItemToEnd)] =
-          moveToEnd;
+      semanticsActions[CustomSemanticsAction(label: reorderItemAfter)] = moveAfter;
+      semanticsActions[CustomSemanticsAction(label: localizations.reorderItemToEnd)] = moveToEnd;
     }
 
     // We pass toWrap with a GlobalKey into the item so that when it
@@ -568,14 +557,13 @@ class ReorderableGridViewState extends State<ReorderableGridView> {
     }());
 
     final Widget itemWithSemantics = _wrapWithSemantics(item, index);
-    final Key itemGlobalKey =
-        _ReorderableGridViewChildGlobalKey(item.key!, this);
+    final Key itemGlobalKey = _CombinableReorderableGridViewChildGlobalKey(item.key!, this);
 
     switch (Theme.of(context).platform) {
       case TargetPlatform.linux:
       case TargetPlatform.windows:
       case TargetPlatform.macOS:
-        return ReorderableGridDragStartListener(
+        return CombinableReorderableGridDragStartListener(
           key: itemGlobalKey,
           index: index,
           child: itemWithSemantics,
@@ -583,7 +571,7 @@ class ReorderableGridViewState extends State<ReorderableGridView> {
       case TargetPlatform.iOS:
       case TargetPlatform.android:
       case TargetPlatform.fuchsia:
-        return ReorderableGridDelayedDragStartListener(
+        return CombinableReorderableGridDelayedDragStartListener(
           key: itemGlobalKey,
           index: index,
           child: itemWithSemantics,
@@ -627,14 +615,13 @@ class ReorderableGridViewState extends State<ReorderableGridView> {
       slivers: <Widget>[
         SliverPadding(
           padding: widget.padding ?? EdgeInsets.zero,
-          sliver: SliverReorderableGrid(
+          sliver: SliverCombinableReorderableGrid(
             itemBuilder: _itemBuilder,
             gridDelegate: widget.gridDelegate,
             itemCount: widget.itemCount,
             onReorder: widget.onReorder,
             proxyDecorator: widget.proxyDecorator ?? _proxyDecorator,
-            autoScroll: widget.autoScroll ??
-                widget.physics is! NeverScrollableScrollPhysics,
+            autoScroll: widget.autoScroll ?? widget.physics is! NeverScrollableScrollPhysics,
             scrollDirection: widget.scrollDirection,
             reverse: widget.reverse,
           ),
@@ -650,9 +637,8 @@ class ReorderableGridViewState extends State<ReorderableGridView> {
 // The difference with GlobalObjectKey is that it uses [==] instead of [identical]
 // of the objects used to generate widgets.
 @optionalTypeArgs
-class _ReorderableGridViewChildGlobalKey extends GlobalObjectKey {
-  const _ReorderableGridViewChildGlobalKey(this.subKey, this.state)
-      : super(subKey);
+class _CombinableReorderableGridViewChildGlobalKey extends GlobalObjectKey {
+  const _CombinableReorderableGridViewChildGlobalKey(this.subKey, this.state) : super(subKey);
 
   final Key subKey;
   final State state;
@@ -662,9 +648,7 @@ class _ReorderableGridViewChildGlobalKey extends GlobalObjectKey {
     if (other.runtimeType != runtimeType) {
       return false;
     }
-    return other is _ReorderableGridViewChildGlobalKey &&
-        other.subKey == subKey &&
-        other.state == state;
+    return other is _CombinableReorderableGridViewChildGlobalKey && other.subKey == subKey && other.state == state;
   }
 
   @override

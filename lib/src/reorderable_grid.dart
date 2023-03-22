@@ -1,7 +1,11 @@
-import 'dart:math';
+import 'dart:developer';
+import 'dart:math' hide log;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+
+typedef ValidateCombinationCallback = bool Function(int draggingIndex, int targetIndex);
+typedef CombinationCallback = void Function(int draggedIndex, int targetIndex);
 
 /// {@template reorderable_grid_view.reorderable_grid}
 /// A scrolling container that allows the user to interactively reorder the
@@ -13,26 +17,26 @@ import 'package:flutter/material.dart';
 /// It is up to the application to wrap each child (or an internal part of the
 /// child such as a drag handle) with a drag listener that will recognize
 /// the start of an item drag and then start the reorder by calling
-/// [ReorderableGridState.startItemDragReorder]. This is most easily achieved
-/// by wrapping each child in a [ReorderableGridDragStartListener] or a
-/// [ReorderableGridDelayedDragStartListener]. These will take care of recognizing
+/// [CombinableReorderableGridState.startItemDragReorder]. This is most easily achieved
+/// by wrapping each child in a [CombinableReorderableGridDragStartListener] or a
+/// [CombinableReorderableGridDelayedDragStartListener]. These will take care of recognizing
 /// the start of a drag gesture and call the grid state's
-/// [ReorderableGridState.startItemDragReorder] method.
+/// [CombinableReorderableGridState.startItemDragReorder] method.
 ///
-/// This widget's [ReorderableGridState] can be used to manually start an item
+/// This widget's [CombinableReorderableGridState] can be used to manually start an item
 /// reorder, or cancel a current drag. To refer to the
-/// [ReorderableGridState] either provide a [GlobalKey] or use the static
-/// [ReorderableGrid.of] method from an item's build method.
+/// [CombinableReorderableGridState] either provide a [GlobalKey] or use the static
+/// [CombinableReorderableGrid.of] method from an item's build method.
 ///
 /// See also:
 ///
-///  * [SliverReorderableGrid], a sliver grid that allows the user to reorder
+///  * [SliverCombinableReorderableGrid], a sliver grid that allows the user to reorder
 ///    its items.
 /// {@endtemplate}
-class ReorderableGrid extends StatefulWidget {
+class CombinableReorderableGrid extends StatefulWidget {
   /// {@macro reorderable_grid_view.reorderable_grid}
   /// The [itemCount] must be greater than or equal to zero.
-  const ReorderableGrid({
+  const CombinableReorderableGrid({
     Key? key,
     required this.itemBuilder,
     required this.itemCount,
@@ -53,6 +57,8 @@ class ReorderableGrid extends StatefulWidget {
     this.restorationId,
     this.clipBehavior = Clip.hardEdge,
     this.autoScroll,
+    this.canCombine,
+    this.onCombine,
   })  : assert(itemCount >= 0),
         super(key: key);
 
@@ -64,8 +70,8 @@ class ReorderableGrid extends StatefulWidget {
   /// position in the grid. The value of the index parameter will be between
   /// zero and one less than [itemCount]. All items in the grid must have a
   /// unique [Key], and should have some kind of listener to start the drag
-  /// (usually a [ReorderableGridDragStartListener] or
-  /// [ReorderableGridDelayedDragStartListener]).
+  /// (usually a [CombinableReorderableGridDragStartListener] or
+  /// [CombinableReorderableGridDelayedDragStartListener]).
   final IndexedWidgetBuilder itemBuilder;
 
   /// {@macro flutter.widgets.reorderable_list.itemCount}
@@ -126,13 +132,20 @@ class ReorderableGrid extends StatefulWidget {
   /// [NeverScrollableScrollPhysics]
   final bool? autoScroll;
 
+  /// Validates if two specific indexes can be combined.
+  /// When two items can be combined, the [onReorder] callback won't be called, instead [onCombine] will be.
+  final ValidateCombinationCallback? canCombine;
+
+  /// Callback when two items that [canCombine] allows are combined.
+  final CombinationCallback? onCombine;
+
   /// The state from the closest instance of this class that encloses the given
   /// context.
   ///
-  /// This method is typically used by [ReorderableGrid] item widgets that
+  /// This method is typically used by [CombinableReorderableGrid] item widgets that
   /// insert or remove items in response to user input.
   ///
-  /// If no [ReorderableGrid] surrounds the given context, then this function
+  /// If no [CombinableReorderableGrid] surrounds the given context, then this function
   /// will assert in debug mode and throw an exception in release mode.
   ///
   /// This method can be expensive (it walks the element tree).
@@ -140,21 +153,21 @@ class ReorderableGrid extends StatefulWidget {
   /// See also:
   ///
   ///  * [maybeOf], a similar function that will return null if no
-  ///    [ReorderableGrid] ancestor is found.
-  static ReorderableGridState of(BuildContext context) {
-    final ReorderableGridState? result = context.findAncestorStateOfType<ReorderableGridState>();
+  ///    [CombinableReorderableGrid] ancestor is found.
+  static CombinableReorderableGridState of(BuildContext context) {
+    final CombinableReorderableGridState? result = context.findAncestorStateOfType<CombinableReorderableGridState>();
     assert(() {
       if (result == null) {
         throw FlutterError.fromParts(<DiagnosticsNode>[
-          ErrorSummary('ReorderableGrid.of() called with a context that does not contain a ReorderableGrid.'),
+          ErrorSummary('CombinableReorderableGrid.of() called with a context that does not contain a CombinableReorderableGrid.'),
           ErrorDescription(
-            'No ReorderableGrid ancestor could be found starting from the context that was passed to ReorderableGrid.of().',
+            'No CombinableReorderableGrid ancestor could be found starting from the context that was passed to CombinableReorderableGrid.of().',
           ),
           ErrorHint(
             'This can happen when the context provided is from the same StatefulWidget that '
-            'built the ReorderableGrid. Please see the ReorderableGrid documentation for examples '
-            'of how to refer to an ReorderableGridState object:\n'
-            '  https://api.flutter.dev/flutter/widgets/ReorderableGridState-class.html',
+            'built the CombinableReorderableGrid. Please see the CombinableReorderableGrid documentation for examples '
+            'of how to refer to an CombinableReorderableGridState object:\n'
+            '  https://api.flutter.dev/flutter/widgets/CombinableReorderableGridState-class.html',
           ),
           context.describeElement('The context used was'),
         ]);
@@ -167,41 +180,41 @@ class ReorderableGrid extends StatefulWidget {
   /// The state from the closest instance of this class that encloses the given
   /// context.
   ///
-  /// This method is typically used by [ReorderableGrid] item widgets that insert
+  /// This method is typically used by [CombinableReorderableGrid] item widgets that insert
   /// or remove items in response to user input.
   ///
-  /// If no [ReorderableGrid] surrounds the context given, then this function will
+  /// If no [CombinableReorderableGrid] surrounds the context given, then this function will
   /// return null.
   ///
   /// This method can be expensive (it walks the element tree).
   ///
   /// See also:
   ///
-  ///  * [of], a similar function that will throw if no [ReorderableGrid] ancestor
+  ///  * [of], a similar function that will throw if no [CombinableReorderableGrid] ancestor
   ///    is found.
-  static ReorderableGridState? maybeOf(BuildContext context) {
-    return context.findAncestorStateOfType<ReorderableGridState>();
+  static CombinableReorderableGridState? maybeOf(BuildContext context) {
+    return context.findAncestorStateOfType<CombinableReorderableGridState>();
   }
 
   @override
-  ReorderableGridState createState() => ReorderableGridState();
+  CombinableReorderableGridState createState() => CombinableReorderableGridState();
 }
 
 /// The state for a grid that allows the user to interactively reorder
 /// the grid items.
 ///
 /// An app that needs to start a new item drag or cancel an existing one
-/// can refer to the [ReorderableGrid]'s state with a global key:
+/// can refer to the [CombinableReorderableGrid]'s state with a global key:
 ///
 /// ```dart
-/// GlobalKey<ReorderableGridState> gridKey = GlobalKey<ReorderableGridState>();
+/// GlobalKey<CombinableReorderableGridState> gridKey = GlobalKey<CombinableReorderableGridState>();
 /// ...
-/// ReorderableGrid(key: gridKey, ...);
+/// CombinableReorderableGrid(key: gridKey, ...);
 /// ...
 /// gridKey.currentState.cancelReorder();
 /// ```
-class ReorderableGridState extends State<ReorderableGrid> {
-  final GlobalKey<SliverReorderableGridState> _sliverReorderableGridKey = GlobalKey();
+class CombinableReorderableGridState extends State<CombinableReorderableGrid> {
+  final GlobalKey<SliverCombinableReorderableGridState> _sliverCombinableReorderableGridKey = GlobalKey();
 
   /// Initiate the dragging of the item at [index] that was started with
   /// the pointer down [event].
@@ -213,14 +226,14 @@ class ReorderableGridState extends State<ReorderableGrid> {
   ///
   /// Most applications will not use this directly, but will wrap the item
   /// (or part of the item, like a drag handle) in either a
-  /// [ReorderableGridDragStartListener] or [ReorderableGridDelayedDragStartListener]
+  /// [CombinableReorderableGridDragStartListener] or [CombinableReorderableGridDelayedDragStartListener]
   /// which call this for the application.
   void startItemDragReorder({
     required int index,
     required PointerDownEvent event,
     required MultiDragGestureRecognizer recognizer,
   }) {
-    _sliverReorderableGridKey.currentState!.startItemDragReorder(index: index, event: event, recognizer: recognizer);
+    _sliverCombinableReorderableGridKey.currentState!.startItemDragReorder(index: index, event: event, recognizer: recognizer);
   }
 
   /// Cancel any item drag in progress.
@@ -231,7 +244,7 @@ class ReorderableGridState extends State<ReorderableGrid> {
   ///
   /// If no drag is active, this will do nothing.
   void cancelReorder() {
-    _sliverReorderableGridKey.currentState!.cancelReorder();
+    _sliverCombinableReorderableGridKey.currentState!.cancelReorder();
   }
 
   @override
@@ -252,8 +265,8 @@ class ReorderableGridState extends State<ReorderableGrid> {
       slivers: <Widget>[
         SliverPadding(
           padding: widget.padding ?? EdgeInsets.zero,
-          sliver: SliverReorderableGrid(
-            key: _sliverReorderableGridKey,
+          sliver: SliverCombinableReorderableGrid(
+            key: _sliverCombinableReorderableGridKey,
             gridDelegate: widget.gridDelegate,
             itemBuilder: widget.itemBuilder,
             itemCount: widget.itemCount,
@@ -262,6 +275,8 @@ class ReorderableGridState extends State<ReorderableGrid> {
             reverse: widget.reverse,
             autoScroll: widget.autoScroll ?? widget.physics is! NeverScrollableScrollPhysics,
             scrollDirection: widget.scrollDirection,
+            canCombine: widget.canCombine,
+            onCombine: widget.onCombine,
           ),
         ),
       ],
@@ -274,32 +289,34 @@ class ReorderableGridState extends State<ReorderableGrid> {
 /// It is up to the application to wrap each child (or an internal part of the
 /// child) with a drag listener that will recognize the start of an item drag
 /// and then start the reorder by calling
-/// [SliverReorderableGridState.startItemDragReorder]. This is most easily
-/// achieved by wrapping each child in a [ReorderableGridDragStartListener] or
-/// a [ReorderableGridDelayedDragStartListener]. These will take care of
+/// [SliverCombinableReorderableGridState.startItemDragReorder]. This is most easily
+/// achieved by wrapping each child in a [CombinableReorderableGridDragStartListener] or
+/// a [CombinableReorderableGridDelayedDragStartListener]. These will take care of
 /// recognizing the start of a drag gesture and call the grid state's start
 /// item drag method.
 ///
-/// This widget's [SliverReorderableGridState] can be used to manually start an item
+/// This widget's [SliverCombinableReorderableGridState] can be used to manually start an item
 /// reorder, or cancel a current drag that's already underway. To refer to the
-/// [SliverReorderableGridState] either provide a [GlobalKey] or use the static
-/// [SliverReorderableGrid.of] method from an item's build method.
+/// [SliverCombinableReorderableGridState] either provide a [GlobalKey] or use the static
+/// [SliverCombinableReorderableGrid.of] method from an item's build method.
 ///
 /// See also:
 ///
-///  * [ReorderableGrid], a regular widget grid that allows the user to reorder
+///  * [CombinableReorderableGrid], a regular widget grid that allows the user to reorder
 ///    its items.
-class SliverReorderableGrid extends StatefulWidget {
+class SliverCombinableReorderableGrid extends StatefulWidget {
   /// Creates a sliver grid that allows the user to interactively reorder its
   /// items.
   ///
   /// The [itemCount] must be greater than or equal to zero.
-  const SliverReorderableGrid({
+  const SliverCombinableReorderableGrid({
     Key? key,
     required this.itemBuilder,
     required this.itemCount,
     required this.onReorder,
     required this.gridDelegate,
+    this.canCombine,
+    this.onCombine,
     this.reverse = false,
     this.proxyDecorator,
     this.autoScroll = true,
@@ -336,16 +353,23 @@ class SliverReorderableGrid extends StatefulWidget {
   /// {@macro flutter.widgets.scroll_view.scrollDirection}
   final Axis scrollDirection;
 
+  /// Validates if two specific indexes can be combined.
+  /// When two items can be combined, the [onReorder] callback won't be called, instead [onCombine] will be.
+  final ValidateCombinationCallback? canCombine;
+
+  /// Callback when two items that [canCombine] allows are combined.
+  final CombinationCallback? onCombine;
+
   @override
-  SliverReorderableGridState createState() => SliverReorderableGridState();
+  SliverCombinableReorderableGridState createState() => SliverCombinableReorderableGridState();
 
   /// The state from the closest instance of this class that encloses the given
   /// context.
   ///
-  /// This method is typically used by [SliverReorderableGrid] item widgets to
+  /// This method is typically used by [SliverCombinableReorderableGrid] item widgets to
   /// start or cancel an item drag operation.
   ///
-  /// If no [SliverReorderableGrid] surrounds the context given, this function
+  /// If no [SliverCombinableReorderableGrid] surrounds the context given, this function
   /// will assert in debug mode and throw an exception in release mode.
   ///
   /// This method can be expensive (it walks the element tree).
@@ -353,20 +377,20 @@ class SliverReorderableGrid extends StatefulWidget {
   /// See also:
   ///
   ///  * [maybeOf], a similar function that will return null if no
-  ///    [SliverReorderableGrid] ancestor is found.
-  static SliverReorderableGridState of(BuildContext context) {
-    final SliverReorderableGridState? result = context.findAncestorStateOfType<SliverReorderableGridState>();
+  ///    [SliverCombinableReorderableGrid] ancestor is found.
+  static SliverCombinableReorderableGridState of(BuildContext context) {
+    final SliverCombinableReorderableGridState? result = context.findAncestorStateOfType<SliverCombinableReorderableGridState>();
     assert(() {
       if (result == null) {
         throw FlutterError.fromParts(<DiagnosticsNode>[
           ErrorSummary(
-            'SliverReorderableGrid.of() called with a context that does not contain a SliverReorderableGrid.',
+            'SliverCombinableReorderableGrid.of() called with a context that does not contain a SliverCombinableReorderableGrid.',
           ),
           ErrorDescription(
-            'No SliverReorderableGrid ancestor could be found starting from the context that was passed to SliverReorderableGrid.of().',
+            'No SliverCombinableReorderableGrid ancestor could be found starting from the context that was passed to SliverCombinableReorderableGrid.of().',
           ),
           ErrorHint('This can happen when the context provided is from the same StatefulWidget that '
-              'built the SliverReorderableGrid. Please see the SliverReorderableGrid documentation for examples'),
+              'built the SliverCombinableReorderableGrid. Please see the SliverCombinableReorderableGrid documentation for examples'),
           context.describeElement('The context used was'),
         ]);
       }
@@ -378,20 +402,20 @@ class SliverReorderableGrid extends StatefulWidget {
   /// The state from the closest instance of this class that encloses the given
   /// context.
   ///
-  /// This method is typically used by [SliverReorderableGrid] item widgets that
+  /// This method is typically used by [SliverCombinableReorderableGrid] item widgets that
   /// insert or remove items in response to user input.
   ///
-  /// If no [SliverReorderableGrid] surrounds the context given, this function
+  /// If no [SliverCombinableReorderableGrid] surrounds the context given, this function
   /// will return null.
   ///
   /// This method can be expensive (it walks the element tree).
   ///
   /// See also:
   ///
-  ///  * [of], a similar function that will throw if no [SliverReorderableGrid]
+  ///  * [of], a similar function that will throw if no [SliverCombinableReorderableGrid]
   ///    ancestor is found.
-  static SliverReorderableGridState? maybeOf(BuildContext context) {
-    return context.findAncestorStateOfType<SliverReorderableGridState>();
+  static SliverCombinableReorderableGridState? maybeOf(BuildContext context) {
+    return context.findAncestorStateOfType<SliverCombinableReorderableGridState>();
   }
 }
 
@@ -399,20 +423,20 @@ class SliverReorderableGrid extends StatefulWidget {
 /// the grid items.
 ///
 /// An app that needs to start a new item drag or cancel an existing one
-/// can refer to the [SliverReorderableGrid]'s state with a global key:
+/// can refer to the [SliverCombinableReorderableGrid]'s state with a global key:
 ///
 /// ```dart
-/// GlobalKey<SliverReorderableGridState> gridKey = GlobalKey<SliverReorderableGridState>();
+/// GlobalKey<SliverCombinableReorderableGridState> gridKey = GlobalKey<SliverCombinableReorderableGridState>();
 /// ...
-/// SliverReorderableGrid(key: gridKey, ...);
+/// SliverCombinableReorderableGrid(key: gridKey, ...);
 /// ...
 /// gridKey.currentState.cancelReorder();
 /// ```
 ///
-/// [ReorderableGridDragStartListener] and [ReorderableGridDelayedDragStartListener]
-/// refer to their [SliverReorderableGrid] with the static
-/// [SliverReorderableGrid.of] method.
-class SliverReorderableGridState extends State<SliverReorderableGrid> with TickerProviderStateMixin {
+/// [CombinableReorderableGridDragStartListener] and [CombinableReorderableGridDelayedDragStartListener]
+/// refer to their [SliverCombinableReorderableGrid] with the static
+/// [SliverCombinableReorderableGrid.of] method.
+class SliverCombinableReorderableGridState extends State<SliverCombinableReorderableGrid> with TickerProviderStateMixin {
   // Map of index -> child state used manage where the dragging item will need
   // to be inserted.
   final Map<int, _ReorderableItemState> _items = <int, _ReorderableItemState>{};
@@ -425,9 +449,23 @@ class SliverReorderableGridState extends State<SliverReorderableGrid> with Ticke
   MultiDragGestureRecognizer? _recognizer;
   bool _autoScrolling = false;
 
+  int? _indexCombine;
+
+  int? get indexCombine => _indexCombine;
+
+  bool get isLogging => false;
+
+  void _log(String s) {
+    if (isLogging) {
+      debugPrint(s);
+      log(s);
+    }
+  }
+
   @override
-  void didUpdateWidget(covariant SliverReorderableGrid oldWidget) {
+  void didUpdateWidget(covariant SliverCombinableReorderableGrid oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _log('SliverCombinableReorderableGridState.didUpdateWidget');
     if (widget.itemCount != oldWidget.itemCount) {
       cancelReorder();
     }
@@ -435,6 +473,7 @@ class SliverReorderableGridState extends State<SliverReorderableGrid> with Ticke
 
   @override
   void dispose() {
+    _log('SliverCombinableReorderableGridState.dispose');
     _dragInfo?.dispose();
     super.dispose();
   }
@@ -447,7 +486,7 @@ class SliverReorderableGridState extends State<SliverReorderableGrid> with Ticke
   ///
   /// Most applications will not use this directly, but will wrap the item
   /// (or part of the item, like a drag handle) in either a
-  /// [ReorderableGridDragStartListener] or [ReorderableGridDelayedDragStartListener]
+  /// [CombinableReorderableGridDragStartListener] or [CombinableReorderableGridDelayedDragStartListener]
   /// which call this method when they detect the gesture that triggers a drag
   /// start.
   void startItemDragReorder({
@@ -455,6 +494,7 @@ class SliverReorderableGridState extends State<SliverReorderableGrid> with Ticke
     required PointerDownEvent event,
     required MultiDragGestureRecognizer recognizer,
   }) {
+    _log('SliverCombinableReorderableGridState.startItemDragReorder');
     assert(0 <= index && index < widget.itemCount);
     setState(() {
       if (_dragInfo != null) {
@@ -482,10 +522,12 @@ class SliverReorderableGridState extends State<SliverReorderableGrid> with Ticke
   ///
   /// If no drag is active, this will do nothing.
   void cancelReorder() {
+    _log('SliverCombinableReorderableGridState.cancelReorder');
     _dragReset();
   }
 
   void _registerItem(_ReorderableItemState item) {
+    // _log('SliverCombinableReorderableGridState.registerItem');
     _items[item.index] = item;
     if (item.index == _dragInfo?.index) {
       item.dragging = true;
@@ -494,6 +536,7 @@ class SliverReorderableGridState extends State<SliverReorderableGrid> with Ticke
   }
 
   void _unregisterItem(int index, _ReorderableItemState item) {
+    _log('SliverCombinableReorderableGridState.unregisterItem');
     final _ReorderableItemState? currentItem = _items[index];
     if (currentItem == item) {
       _items.remove(index);
@@ -501,6 +544,7 @@ class SliverReorderableGridState extends State<SliverReorderableGrid> with Ticke
   }
 
   Drag? _dragStart(Offset position) {
+    _log('SliverCombinableReorderableGridState.dragStart');
     assert(_dragInfo == null);
     widget.onDragStart?.call();
 
@@ -535,6 +579,7 @@ class SliverReorderableGridState extends State<SliverReorderableGrid> with Ticke
   }
 
   void _dragUpdate(_DragInfo item, Offset position, Offset delta) {
+    _log('SliverCombinableReorderableGridState.dragUpdate');
     setState(() {
       _overlayEntry?.markNeedsBuild();
       _dragUpdateItems();
@@ -543,25 +588,31 @@ class SliverReorderableGridState extends State<SliverReorderableGrid> with Ticke
   }
 
   void _dragCancel(_DragInfo item) {
+    _log('SliverCombinableReorderableGridState.dragCancel');
     _dragReset();
     widget.onDragCompleted?.call();
   }
 
   void _dragEnd(_DragInfo item) {
+    _log('SliverCombinableReorderableGridState.dragEnd');
     setState(() => _finalDropPosition = _itemOffsetAt(_insertIndex!));
     widget.onDragCompleted?.call();
   }
 
   void _dropCompleted() {
+    _log('SliverCombinableReorderableGridState.dropCompleted');
     final int fromIndex = _dragIndex!;
     final int toIndex = _insertIndex!;
     if (fromIndex != toIndex) {
       widget.onReorder.call(fromIndex, toIndex);
+    } else if (indexCombine != null && fromIndex != indexCombine) {
+      widget.onCombine?.call(fromIndex, indexCombine!);
     }
     _dragReset();
   }
 
   void _dragReset() {
+    _log('SliverCombinableReorderableGridState.dragReset');
     setState(() {
       if (_dragInfo != null) {
         if (_dragIndex != null && _items.containsKey(_dragIndex)) {
@@ -578,17 +629,20 @@ class SliverReorderableGridState extends State<SliverReorderableGrid> with Ticke
         _overlayEntry?.remove();
         _overlayEntry = null;
         _finalDropPosition = null;
+        _indexCombine = null;
       }
     });
   }
 
   void _resetItemGap() {
+    _log('SliverCombinableReorderableGridState.resetItemGap');
     for (final _ReorderableItemState item in _items.values) {
       item.resetGap();
     }
   }
 
   void _dragUpdateItems() {
+    _log('SliverCombinableReorderableGridState.dragUpdateItems');
     assert(_dragInfo != null);
 
     int newIndex = _insertIndex!;
@@ -601,7 +655,21 @@ class SliverReorderableGridState extends State<SliverReorderableGrid> with Ticke
       final Rect geometry = item.targetGeometryNonOffset();
 
       if (geometry.contains(dragCenter)) {
-        newIndex = item.index;
+        final distance = (dragCenter - geometry.center).distance;
+        final factor = item.size.width / 4;
+
+        if (distance < factor && (widget.canCombine?.call(_dragIndex!, item.index) ?? false)) {
+          _indexCombine = item.index;
+          newIndex = _dragIndex!;
+          break;
+        }
+
+        final distanceLeftSide = (dragCenter - geometry.topLeft).distance;
+        final distanceRightSide = (dragCenter - geometry.topRight).distance;
+        final subtractIndex = distanceLeftSide < distanceRightSide ? 1 : 0;
+
+        _indexCombine = null;
+        newIndex = item.index - subtractIndex;
         break;
       }
     }
@@ -615,6 +683,7 @@ class SliverReorderableGridState extends State<SliverReorderableGrid> with Ticke
   }
 
   Future<void> _autoScrollIfNecessary() async {
+    _log('SliverCombinableReorderableGridState.autoScrollIfNecessary');
     if (_autoScrolling || _dragInfo == null || _dragInfo!.scrollable == null || widget.autoScroll == false) {
       return;
     }
@@ -751,7 +820,7 @@ class _ReorderableItem extends StatefulWidget {
 }
 
 class _ReorderableItemState extends State<_ReorderableItem> {
-  late SliverReorderableGridState _listState;
+  late SliverCombinableReorderableGridState _listState;
 
   Offset _startOffset = Offset.zero;
   Offset _targetOffset = Offset.zero;
@@ -773,7 +842,7 @@ class _ReorderableItemState extends State<_ReorderableItem> {
 
   @override
   void initState() {
-    _listState = SliverReorderableGrid.of(context);
+    _listState = SliverCombinableReorderableGrid.of(context);
     _listState._registerItem(this);
     super.initState();
   }
@@ -879,6 +948,11 @@ class _ReorderableItemState extends State<_ReorderableItem> {
     return itemPosition & itemRenderBox.size;
   }
 
+  Size get size {
+    final RenderBox itemRenderBox = context.findRenderObject()! as RenderBox;
+    return itemRenderBox.size;
+  }
+
   void rebuild() {
     if (mounted) {
       setState(() {});
@@ -892,24 +966,25 @@ class _ReorderableItemState extends State<_ReorderableItem> {
 ///
 /// See also:
 ///
-///  * [ReorderableGridDelayedDragStartListener], a similar wrapper that will
+///  * [CombinableReorderableGridDelayedDragStartListener], a similar wrapper that will
 ///    only recognize the start after a long press event.
-///  * [ReorderableGrid], a widget grid that allows the user to reorder
+///  * [CombinableReorderableGrid], a widget grid that allows the user to reorder
 ///    its items.
-///  * [SliverReorderableGrid], a sliver grid that allows the user to reorder
+///  * [SliverCombinableReorderableGrid], a sliver grid that allows the user to reorder
 ///    its items.
-///  * [ReorderableGridView], a material design grid that allows the user to
+///  * [CombinableReorderableGridView], a material design grid that allows the user to
 ///    reorder its items.
-class ReorderableGridDragStartListener extends StatelessWidget {
+class CombinableReorderableGridDragStartListener extends StatelessWidget {
   /// Creates a listener for a drag immediately following a pointer down
   /// event over the given child widget.
   ///
   /// This is most commonly used to wrap part of a grid item like a drag
   /// handle.
-  const ReorderableGridDragStartListener({
+  const CombinableReorderableGridDragStartListener({
     Key? key,
     required this.child,
     required this.index,
+    this.affinity,
     this.enabled = true,
   }) : super(key: key);
 
@@ -926,6 +1001,25 @@ class ReorderableGridDragStartListener extends StatelessWidget {
   /// user taps on the child. If false, tapping on the child will be ignored.
   final bool enabled;
 
+  /// Controls how this widget competes with other gestures to initiate a drag.
+  ///
+  /// If affinity is null, this widget initiates a drag as soon as it recognizes
+  /// a tap down gesture, regardless of any directionality. If affinity is
+  /// horizontal (or vertical), then this widget will compete with other
+  /// horizontal (or vertical, respectively) gestures.
+  ///
+  /// For example, if this widget is placed in a vertically scrolling region and
+  /// has horizontal affinity, pointer motion in the vertical direction will
+  /// result in a scroll and pointer motion in the horizontal direction will
+  /// result in a drag. Conversely, if the widget has a null or vertical
+  /// affinity, pointer motion in any direction will result in a drag rather
+  /// than in a scroll because the draggable widget, being the more specific
+  /// widget, will out-compete the [Scrollable] for vertical gestures.
+  ///
+  /// For the directions this widget can be dragged in after the drag event
+  /// starts, see [Draggable.axis].
+  final Axis? affinity;
+
   @override
   Widget build(BuildContext context) {
     return Listener(
@@ -941,11 +1035,18 @@ class ReorderableGridDragStartListener extends StatelessWidget {
   /// subclasses can use this to customize the drag start gesture.
   @protected
   MultiDragGestureRecognizer createRecognizer() {
-    return ImmediateMultiDragGestureRecognizer(debugOwner: this);
+    switch (affinity) {
+      case Axis.horizontal:
+        return HorizontalMultiDragGestureRecognizer();
+      case Axis.vertical:
+        return VerticalMultiDragGestureRecognizer();
+      case null:
+        return ImmediateMultiDragGestureRecognizer();
+    }
   }
 
   void _startDragging(BuildContext context, PointerDownEvent event) {
-    final SliverReorderableGridState? list = SliverReorderableGrid.maybeOf(context);
+    final SliverCombinableReorderableGridState? list = SliverCombinableReorderableGrid.maybeOf(context);
     list?.startItemDragReorder(
       index: index,
       event: event,
@@ -960,30 +1061,33 @@ class ReorderableGridDragStartListener extends StatelessWidget {
 ///
 /// See also:
 ///
-///  * [ReorderableGridDragStartListener], a similar wrapper that will
+///  * [CombinableReorderableGridDragStartListener], a similar wrapper that will
 ///    recognize the start of the drag immediately after a pointer down event.
-///  * [ReorderableGrid], a widget grid that allows the user to reorder
+///  * [CombinableReorderableGrid], a widget grid that allows the user to reorder
 ///    its items.
-///  * [SliverReorderableGrid], a sliver grid that allows the user to reorder
+///  * [SliverCombinableReorderableGrid], a sliver grid that allows the user to reorder
 ///    its items.
-///  * [ReorderableGridView], a material design grid that allows the user to
+///  * [CombinableReorderableGridView], a material design grid that allows the user to
 ///    reorder its items.
-class ReorderableGridDelayedDragStartListener extends ReorderableGridDragStartListener {
+class CombinableReorderableGridDelayedDragStartListener extends CombinableReorderableGridDragStartListener {
   /// Creates a listener for an drag following a long press event over the
   /// given child widget.
   ///
   /// This is most commonly used to wrap an entire grid item in a reorderable
   /// grid.
-  const ReorderableGridDelayedDragStartListener({
+  const CombinableReorderableGridDelayedDragStartListener({
     Key? key,
     required Widget child,
     required int index,
     bool enabled = true,
+    this.delay = kLongPressTimeout,
   }) : super(key: key, child: child, index: index, enabled: enabled);
+
+  final Duration delay;
 
   @override
   MultiDragGestureRecognizer createRecognizer() {
-    return DelayedMultiDragGestureRecognizer(debugOwner: this);
+    return DelayedMultiDragGestureRecognizer(debugOwner: this, delay: delay);
   }
 }
 
@@ -1019,7 +1123,7 @@ class _DragInfo extends Drag {
   final ReorderItemProxyDecorator? proxyDecorator;
   final TickerProvider tickerProvider;
 
-  late SliverReorderableGridState listState;
+  late SliverCombinableReorderableGridState listState;
   late int index;
   late Widget child;
   late Offset dragPosition;
@@ -1104,7 +1208,7 @@ class _DragItemProxy extends StatelessWidget {
     required this.proxyDecorator,
   }) : super(key: key);
 
-  final SliverReorderableGridState listState;
+  final SliverCombinableReorderableGridState listState;
   final int index;
   final Widget child;
   final Offset position;
@@ -1156,7 +1260,7 @@ class _ReorderableItemGlobalKey extends GlobalObjectKey {
 
   final Key subKey;
   final int index;
-  final SliverReorderableGridState state;
+  final SliverCombinableReorderableGridState state;
 
   @override
   bool operator ==(Object other) {
@@ -1166,4 +1270,8 @@ class _ReorderableItemGlobalKey extends GlobalObjectKey {
 
   @override
   int get hashCode => Object.hash(subKey, index, state);
+}
+
+extension RectExt on Rect {
+  double get area => height * width;
 }

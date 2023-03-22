@@ -1,7 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:reorderable_grid/reorderable_grid.dart';
+import 'package:labhouse_combinable_reorderable_scroll/src/reorderable_grid.dart';
 
 void main() {
   testWidgets('negative itemCount should assert', (WidgetTester tester) async {
@@ -11,7 +11,7 @@ void main() {
         builder: (BuildContext outerContext, StateSetter setState) {
           return CustomScrollView(
             slivers: <Widget>[
-              SliverReorderableGrid(
+              SliverCombinableReorderableGrid(
                 itemCount: -1,
                 onReorder: (int fromIndex, int toIndex) {
                   setState(() {
@@ -39,8 +39,7 @@ void main() {
     expect(tester.takeException(), isA<AssertionError>());
   });
 
-  testWidgets('zero itemCount should not build widget',
-      (WidgetTester tester) async {
+  testWidgets('zero itemCount should not build widget', (WidgetTester tester) async {
     final List<int> items = <int>[1, 2, 3];
     await tester.pumpWidget(MaterialApp(
       home: StatefulBuilder(
@@ -53,7 +52,7 @@ void main() {
                   const Text('before'),
                 ]),
               ),
-              SliverReorderableGrid(
+              SliverCombinableReorderableGrid(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 4,
                 ),
@@ -90,9 +89,7 @@ void main() {
     expect(find.text('after'), findsOneWidget);
   });
 
-  testWidgets(
-      'SliverReorderableGrid, items inherit DefaultTextStyle, IconTheme',
-      (WidgetTester tester) async {
+  testWidgets('SliverCombinableReorderableGrid, items inherit DefaultTextStyle, IconTheme', (WidgetTester tester) async {
     const Color textColor = Color(0xffffffff);
     const Color iconColor = Color(0xff0000ff);
 
@@ -120,7 +117,7 @@ void main() {
           .style!;
     }
 
-    // This SliverReorderableGrid has just one item: "item 0".
+    // This SliverCombinableReorderableGrid has just one item: "item 0".
     await tester.pumpWidget(
       TestGrid(
         items: List<int>.from(<int>[0]),
@@ -135,8 +132,7 @@ void main() {
     // Dragging item 0 causes it to be reparented in the overlay. The item
     // should still inherit the IconTheme and DefaultTextStyle because they are
     // InheritedThemes.
-    final TestGesture drag =
-        await tester.startGesture(tester.getCenter(find.text('item 0')));
+    final TestGesture drag = await tester.startGesture(tester.getCenter(find.text('item 0')));
     await tester.pump(kPressTimeout);
     await drag.moveBy(const Offset(0, 50));
     await tester.pump(kPressTimeout);
@@ -152,8 +148,7 @@ void main() {
     expect(getTextStyle().color, textColor);
   });
 
-  testWidgets(
-      'ReorderableGrid supports items with nested list views without throwing layout exception.',
+  testWidgets('CombinableReorderableGrid supports items with nested list views without throwing layout exception.',
       (WidgetTester tester) async {
     // Regression test for https://github.com/flutter/flutter/issues/83224.
     await tester.pumpWidget(
@@ -164,20 +159,19 @@ void main() {
             // safe area at the top. If the nested list doesn't have the
             // padding removed before it is put into the overlay it will
             // overflow the layout by the top padding.
-            data: MediaQuery.of(context)
-                .copyWith(padding: const EdgeInsets.only(top: 50)),
+            data: MediaQuery.of(context).copyWith(padding: const EdgeInsets.only(top: 50)),
             child: child!,
           );
         },
         home: Scaffold(
           appBar: AppBar(title: const Text('Nested Lists')),
-          body: ReorderableGrid(
+          body: CombinableReorderableGrid(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 4,
             ),
             itemCount: 10,
             itemBuilder: (BuildContext context, int index) {
-              return ReorderableGridDragStartListener(
+              return CombinableReorderableGridDragStartListener(
                 index: index,
                 key: ValueKey<int>(index),
                 child: Column(
@@ -202,8 +196,7 @@ void main() {
     );
 
     // Start gesture on first item.
-    final TestGesture drag = await tester
-        .startGesture(tester.getCenter(find.byKey(const ValueKey<int>(0))));
+    final TestGesture drag = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey<int>(0))));
     await tester.pump(kPressTimeout);
 
     // Drag enough for move to start.
@@ -214,8 +207,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets(
-      'SliverReorderableGrid - properly animates the drop at starting position in a reversed list',
+  testWidgets('SliverCombinableReorderableGrid - properly animates the drop at starting position in a reversed list',
       (WidgetTester tester) async {
     // Regression test for https://github.com/flutter/flutter/issues/84625
     final List<int> items = List<int>.generate(8, (int index) => index);
@@ -240,8 +232,7 @@ void main() {
 
     // Drag item 0 downwards off the edge and let it snap back. It should
     // smoothly animate back up.
-    await pressDragRelease(
-        tester.getCenter(find.text('item 0')), const Offset(0, 50));
+    await pressDragRelease(tester.getCenter(find.text('item 0')), const Offset(0, 50));
     expect(tester.getTopLeft(find.text('item 0')), const Offset(0, 400));
     expect(tester.getTopLeft(find.text('item 1')), const Offset(200, 400));
 
@@ -260,8 +251,7 @@ void main() {
     expect(tester.getTopLeft(find.text('item 0')), const Offset(0, 400));
   });
 
-  testWidgets(
-      'ReorderableGridDragStartListener should allow the item to be dragged when enabled is true',
+  testWidgets('CombinableReorderableGridDragStartListener should allow the item to be dragged when enabled is true',
       (WidgetTester tester) async {
     const int itemCount = 5;
     int onReorderCallCount = 0;
@@ -278,7 +268,7 @@ void main() {
     // The list has five elements of height 100
     await tester.pumpWidget(
       MaterialApp(
-        home: ReorderableGrid(
+        home: CombinableReorderableGrid(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 6,
           ),
@@ -287,7 +277,7 @@ void main() {
             return SizedBox(
               key: ValueKey<int>(items[index]),
               height: 100,
-              child: ReorderableGridDragStartListener(
+              child: CombinableReorderableGridDragStartListener(
                 index: index,
                 child: Text('item ${items[index]}'),
               ),
@@ -299,8 +289,7 @@ void main() {
     );
 
     // Start gesture on first item
-    final TestGesture drag =
-        await tester.startGesture(tester.getCenter(find.text('item 0')));
+    final TestGesture drag = await tester.startGesture(tester.getCenter(find.text('item 0')));
     await tester.pump(kPressTimeout);
 
     // Drag enough to move down the first item
@@ -313,8 +302,7 @@ void main() {
     expect(items, orderedEquals(<int>[1, 0, 2, 3, 4]));
   });
 
-  testWidgets(
-      'ReorderableGridDelayedDragStartListener should allow the item to be dragged when enabled is true',
+  testWidgets('CombinableReorderableGridDelayedDragStartListener should allow the item to be dragged when enabled is true',
       (WidgetTester tester) async {
     const int itemCount = 5;
     int onReorderCallCount = 0;
@@ -329,7 +317,7 @@ void main() {
     // The list has five elements of height 100
     await tester.pumpWidget(
       MaterialApp(
-        home: ReorderableGrid(
+        home: CombinableReorderableGrid(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 6,
           ),
@@ -338,7 +326,7 @@ void main() {
             return SizedBox(
               key: ValueKey<int>(items[index]),
               height: 100,
-              child: ReorderableGridDelayedDragStartListener(
+              child: CombinableReorderableGridDelayedDragStartListener(
                 index: index,
                 child: Text('item ${items[index]}'),
               ),
@@ -352,8 +340,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Start gesture on first item
-    final TestGesture drag =
-        await tester.startGesture(tester.getCenter(find.text('item 0')));
+    final TestGesture drag = await tester.startGesture(tester.getCenter(find.text('item 0')));
     await tester.pump(kLongPressTimeout);
 
     // Drag enough to move down the first item
@@ -404,7 +391,7 @@ class _TestGridState extends State<TestGrid> {
                 return CustomScrollView(
                   reverse: widget.reverse,
                   slivers: <Widget>[
-                    SliverReorderableGrid(
+                    SliverCombinableReorderableGrid(
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: widget.crossAxisCount,
                       ),

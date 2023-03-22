@@ -7,6 +7,5 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  reorderable_grid:
+  labhouse_combinable_reorderable_scroll:
     path: ../
-

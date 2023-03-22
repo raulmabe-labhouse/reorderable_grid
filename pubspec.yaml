@@ -1,7 +1,7 @@
-name: reorderable_grid
-description: A full reorderable grid implementations similar to flutter's native reorderable list.
-homepage: https://github.com/casvanluijtelaar/reorderable_grid
-repository: https://github.com/casvanluijtelaar/reorderable_grid
+name: labhouse_combinable_reorderable_scroll
+description: Provides a ReorderableCombinableGrid  and a ReorderableCombinableList along with the Sliver versions. They work as the ReorderableList from flutter works but with the ability to combine two items too, not only reorder them.
+homepage: https://github.com/LabhouseMobile/labhouse-combinable-reorderable-scroll.git
+repository: https://github.com/LabhouseMobile/labhouse-combinable-reorderable-scroll.git
 version: 1.0.6
 
 environment:

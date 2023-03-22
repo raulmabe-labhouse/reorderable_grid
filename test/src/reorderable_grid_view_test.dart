@@ -1,16 +1,16 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:reorderable_grid/reorderable_grid.dart';
+import 'package:labhouse_combinable_reorderable_scroll/src/reorderable_grid_view.dart';
 
 void main() {
   const double itemHeight = 48.0;
 
   testWidgets(
-    'ReorderableGridView.builder asserts on negative childCount',
+    'CombinableReorderableGridView.builder asserts on negative childCount',
     (WidgetTester tester) async {
       expect(
-          () => ReorderableGridView.builder(
+          () => CombinableReorderableGridView.builder(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 4,
                 ),
@@ -25,11 +25,11 @@ void main() {
   );
 
   testWidgets(
-    'ReorderableGridView.builder only creates the children it needs',
+    'CombinableReorderableGridView.builder only creates the children it needs',
     (WidgetTester tester) async {
       final Set<int> itemsCreated = <int>{};
       await tester.pumpWidget(MaterialApp(
-        home: ReorderableGridView.builder(
+        home: CombinableReorderableGridView.builder(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 4,
           ),
@@ -49,10 +49,9 @@ void main() {
     },
   );
 
-  testWidgets('Animation test when placing an item in place',
-      (WidgetTester tester) async {
+  testWidgets('Animation test when placing an item in place', (WidgetTester tester) async {
     const Key testItemKey = Key('Test item');
-    final Widget reorderableGridView = ReorderableGridView.count(
+    final Widget reorderableGridView = CombinableReorderableGridView.count(
       crossAxisCount: 4,
       scrollDirection: Axis.vertical,
       onReorder: (int oldIndex, int newIndex) {},
@@ -82,8 +81,7 @@ void main() {
     ));
 
     Offset getTestItemPosition() {
-      final RenderBox testItem =
-          tester.renderObject<RenderBox>(find.byKey(testItemKey));
+      final RenderBox testItem = tester.renderObject<RenderBox>(find.byKey(testItemKey));
       return testItem.localToGlobal(Offset.zero);
     }
 
@@ -91,8 +89,7 @@ void main() {
     final Offset startPosition = getTestItemPosition();
 
     // Pick it up.
-    final TestGesture gesture =
-        await tester.startGesture(tester.getCenter(find.byKey(testItemKey)));
+    final TestGesture gesture = await tester.startGesture(tester.getCenter(find.byKey(testItemKey)));
     await tester.pump(kLongPressTimeout + kPressTimeout);
     expect(getTestItemPosition(), startPosition);
 
@@ -106,10 +103,8 @@ void main() {
     expect(getTestItemPosition(), startPosition);
   });
 
-  testWidgets(
-      'ReorderableGridView throws an error when key is not passed to its children',
-      (WidgetTester tester) async {
-    final Widget reorderableGridView = ReorderableGridView.builder(
+  testWidgets('CombinableReorderableGridView throws an error when key is not passed to its children', (WidgetTester tester) async {
+    final Widget reorderableGridView = CombinableReorderableGridView.builder(
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
       ),
@@ -129,9 +124,8 @@ void main() {
     expect(exception, isNotNull);
   });
 
-  testWidgets('Throws an error if no overlay present',
-      (WidgetTester tester) async {
-    final Widget reorderableList = ReorderableGridView.count(
+  testWidgets('Throws an error if no overlay present', (WidgetTester tester) async {
+    final Widget reorderableList = CombinableReorderableGridView.count(
       crossAxisCount: 4,
       children: const <Widget>[
         SizedBox(width: 100.0, height: 100.0, key: Key('C'), child: Text('C')),
@@ -160,10 +154,7 @@ void main() {
     final dynamic exception = tester.takeException();
     expect(exception, isFlutterError);
     expect(exception.toString(), contains('No Overlay widget found'));
-    expect(
-        exception.toString(),
-        contains(
-            'ReorderableGridView widgets require an Overlay widget ancestor'));
+    expect(exception.toString(), contains('CombinableReorderableGridView widgets require an Overlay widget ancestor'));
   });
 }
 
